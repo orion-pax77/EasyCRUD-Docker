@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = "us-east-1"
+        AWS_REGION = "eu-north-1"
         DB_HOST    = "easycrud-mysql.cwliqc0oaf7s.us-east-1.rds.amazonaws.com"
         DB_PORT    = "3306"
     }
