@@ -183,6 +183,49 @@ http://<EC2-PUBLIC-IP>:8081
 ```
 
 Install **Suggested Plugins**.
+Perfect 👍 Below is the clean section updated exactly as you requested.
+
+You can replace the **“Install Suggested Plugins”** line with this improved version in your documentation.
+
+---
+
+## 🔹 Access Jenkins
+
+Get admin password:
+
+```bash
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+```
+
+Open browser:
+
+```
+http://<EC2-PUBLIC-IP>:8081
+```
+
+Install **Suggested Plugins**.
+
+---
+
+## 🔹 Additionally Install Required Plugins
+
+After installing Suggested Plugins, go to:
+
+```
+Manage Jenkins → Plugins → Available Plugins
+```
+
+Search and install the following plugins:
+
+### ✅ 1️⃣ AWS Credentials Plugin
+
+Enables secure storage of AWS Access Key & Secret Key for Terraform.
+
+---
+
+### ✅ 2️⃣ Pipeline Stage View Plugin
+
+Provides visual stage-wise execution view for your Jenkins pipeline.
 
 ---
 
@@ -537,6 +580,7 @@ This project demonstrates:
 * ✅ Production-ready Deployment Architecture
 
 ---
+
 
 
 
