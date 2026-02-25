@@ -161,7 +161,7 @@ EOF
             steps {
                 sh """
                     if [ -f frontend/.env ]; then
-                        sed -i 's|BACKEND_URL=.*|VITE_API_URL=http://${EC2_PUBLIC_IP}:8080|' frontend/.env
+                        sed -i 's|VITE_API_URL=.*|VITE_API_URL=http://${EC2_PUBLIC_IP}:8080/api|' frontend/.env
                     else
                         echo ".env file not found!"
                         exit 1
