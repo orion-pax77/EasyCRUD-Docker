@@ -53,8 +53,8 @@ resource "aws_db_instance" "mariadb" {
   identifier              = "easycrud-mariadb"
   allocated_storage       = 20
   engine                  = "mariadb"
-  engine_version          = "8.0"
-  instance_class          = "db.t3.micro"
+  engine_version          = "default"
+  instance_class          = "db.t4g.micro"
   db_name                 = "easycruddb"
   username                = "admin"
   password                = "redhat123"
