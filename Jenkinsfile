@@ -32,50 +32,8 @@ pipeline {
                 }
             }
         }
-        
-        stage('Create MariaDB Database & Table') {
-    steps {
-        withCredentials([usernamePassword(
-            credentialsId: 'rds-creds',
-            usernameVariable: 'DB_USER',
-            passwordVariable: 'DB_PASS'
-        )]) {
 
-            sh """
-            export MYSQL_PWD="${DB_PASS}"
-
-            mysql -h "${RDS_ENDPOINT}" \
-                  -P "${DB_PORT}" \
-                  -u "${DB_USER}" <<EOF
-
-            CREATE DATABASE IF NOT EXISTS student_db;
-
-            CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY '${DB_PASS}';
-
-            GRANT ALL PRIVILEGES ON student_db.* TO 'admin'@'%';
-
-            FLUSH PRIVILEGES;
-
-            USE student_db;
-
-            CREATE TABLE IF NOT EXISTS students (
-              id BIGINT NOT NULL AUTO_INCREMENT,
-              name VARCHAR(255) DEFAULT NULL,
-              email VARCHAR(255) DEFAULT NULL,
-              course VARCHAR(255) DEFAULT NULL,
-              student_class VARCHAR(255) DEFAULT NULL,
-              percentage DOUBLE DEFAULT NULL,
-              branch VARCHAR(255) DEFAULT NULL,
-              mobile_number VARCHAR(255) DEFAULT NULL,
-              PRIMARY KEY (id)
-            );
-
-EOF
-            """
-        }
-    }
-}
-
+        // ✅ Fetch endpoint BEFORE using it
         stage('Fetch RDS Endpoint') {
             steps {
                 script {
@@ -89,25 +47,67 @@ EOF
             }
         }
 
-         stage('Update application.properties') {
-     steps {
-         script {
-             sh """
-                 if [ -f backend/src/main/resources/application.properties ]; then
-                     sed -i 's|spring.datasource.url=.*|spring.datasource.url=jdbc:mariadb://${RDS_ENDPOINT}:${DB_PORT}/easycrud-mariadb|' backend/src/main/resources/application.properties
-                     sed -i 's|spring.datasource.username=.*|spring.datasource.username=admin|' backend/src/main/resources/application.properties
-                     sed -i 's|spring.datasource.password=.*|spring.datasource.password=redhat123|' backend/src/main/resources/application.properties
-                     sed -i 's|spring.jpa.hibernate.ddl-auto=.*|spring.jpa.hibernate.ddl-auto=update|' backend/src/main/resources/application.properties
-                     sed -i 's|spring.jpa.show-sql=.*|spring.jpa.show-sql=true|' backend/src/main/resources/application.properties
-                 else
-                     echo "application.properties not found!"
-                     exit 1
-                 fi
-             """
+        // ✅ Now DB creation works
+        stage('Create MariaDB Database & Table') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'rds-creds',
+                    usernameVariable: 'DB_USER',
+                    passwordVariable: 'DB_PASS'
+                )]) {
+
+                    sh """
+                    export MYSQL_PWD="${DB_PASS}"
+
+                    mysql -h "${RDS_ENDPOINT}" \
+                          -P "${DB_PORT}" \
+                          -u "${DB_USER}" <<EOF
+
+                    CREATE DATABASE IF NOT EXISTS student_db;
+
+                    CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY '${DB_PASS}';
+
+                    GRANT ALL PRIVILEGES ON student_db.* TO 'admin'@'%';
+
+                    FLUSH PRIVILEGES;
+
+                    USE student_db;
+
+                    CREATE TABLE IF NOT EXISTS students (
+                      id BIGINT NOT NULL AUTO_INCREMENT,
+                      name VARCHAR(255) DEFAULT NULL,
+                      email VARCHAR(255) DEFAULT NULL,
+                      course VARCHAR(255) DEFAULT NULL,
+                      student_class VARCHAR(255) DEFAULT NULL,
+                      percentage DOUBLE DEFAULT NULL,
+                      branch VARCHAR(255) DEFAULT NULL,
+                      mobile_number VARCHAR(255) DEFAULT NULL,
+                      PRIMARY KEY (id)
+                    );
+
+EOF
+                    """
+                }
+            }
         }
-    }
-}
-        
+
+        stage('Update application.properties') {
+            steps {
+                sh """
+                    if [ -f backend/src/main/resources/application.properties ]; then
+                        sed -i 's|spring.datasource.url=.*|spring.datasource.url=jdbc:mariadb://${RDS_ENDPOINT}:${DB_PORT}/student_db|' backend/src/main/resources/application.properties
+                        sed -i 's|spring.datasource.username=.*|spring.datasource.username=admin|' backend/src/main/resources/application.properties
+                        sed -i 's|spring.datasource.password=.*|spring.datasource.password=redhat123|' backend/src/main/resources/application.properties
+                        sed -i 's|spring.jpa.hibernate.ddl-auto=.*|spring.jpa.hibernate.ddl-auto=update|' backend/src/main/resources/application.properties
+                        sed -i 's|spring.jpa.show-sql=.*|spring.jpa.show-sql=true|' backend/src/main/resources/application.properties
+                    else
+                        echo "application.properties not found!"
+                        exit 1
+                    fi
+                """
+            }
+        }
+
         stage('Build Backend Image') {
             steps {
                 dir('backend') {
@@ -116,10 +116,10 @@ EOF
             }
         }
 
-        stage('Run Backend Container') {   
+        stage('Run Backend Container') {
             steps {
                 sh """
-                    docker rm -f easycrud1-jenkins:backend || true
+                    docker rm -f easycrud1-backend || true
                     docker run -d --name easycrud1-backend -p 8080:8080 orionpax77/easycrud1-jenkins:backend
                 """
             }
@@ -144,15 +144,14 @@ EOF
             steps {
                 dir('frontend') {
                     sh "docker build -t orionpax77/easycrud1-jenkins:frontend . --no-cache"
-                
                 }
             }
         }
 
-        stage('Run Frontend Container') {  
+        stage('Run Frontend Container') {
             steps {
                 sh """
-                    docker rm -f easycrud1-jenkins:frontend || true
+                    docker rm -f easycrud1-frontend || true
                     docker run -d --name easycrud1-frontend -p 80:80 orionpax77/easycrud1-jenkins:frontend
                 """
             }
@@ -168,7 +167,7 @@ EOF
                     sh """
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                         docker push orionpax77/easycrud1-jenkins:backend
-                        docker push orionpax77/easycrud1-jenkins:frontend}
+                        docker push orionpax77/easycrud1-jenkins:frontend
                         docker logout
                     """
                 }
