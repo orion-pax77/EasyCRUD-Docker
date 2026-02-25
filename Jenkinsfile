@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = "eu-north-1"
+        AWS_REGION = "us-east-1"
         DB_PORT    = "3306"
         IMAGE_TAG  = "latest"
     }
