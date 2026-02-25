@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -26,7 +27,7 @@ pipeline {
                     sh '''
                         terraform -chdir=terraform init -upgrade
                         terraform -chdir=terraform validate
-                        terraform -chdir=terraform apply -auto-approve
+                        terraform -chdir=terraform apply --auto-approve
                     '''
                 }
             }
@@ -92,7 +93,7 @@ EOF
             steps {
                 sh """
                     if [ -f backend/src/main/resources/application.properties ]; then
-                        sed -i 's|spring.datasource.url=.*|spring.datasource.url=jdbc:mariadb://${RDS_ENDPOINT}:${DB_PORT}/student_db|' backend/src/main/resources/application.properties
+                        sed -i 's|spring.datasource.url=.*|spring.datasource.url=jdbc:mariadb://${RDS_ENDPOINT}:${DB_PORT}/student_db?sslMode=trust|' backend/src/main/resources/application.properties
                         sed -i 's|spring.datasource.username=.*|spring.datasource.username=admin|' backend/src/main/resources/application.properties
                         sed -i 's|spring.datasource.password=.*|spring.datasource.password=redhat123|' backend/src/main/resources/application.properties
                         sed -i 's|spring.jpa.hibernate.ddl-auto=.*|spring.jpa.hibernate.ddl-auto=update|' backend/src/main/resources/application.properties
@@ -126,16 +127,47 @@ EOF
             }
         }
 
+        //  NEW AUTOMATED EC2 IP FETCH
+        stage('Fetch EC2 Public IP') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    script {
+                        env.EC2_PUBLIC_IP = sh(
+                            script: """
+                                aws ec2 describe-instances \
+                                --region ${AWS_REGION} \
+                                --filters Name=instance-state-name,Values=running \
+                                --query "Reservations[].Instances[?PublicIpAddress!=null].PublicIpAddress" \
+                                --output text | head -n 1
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                        if (!env.EC2_PUBLIC_IP) {
+                            error "No running EC2 instance with Public IP found!"
+                        }
+
+                        echo "EC2 Public IP: ${env.EC2_PUBLIC_IP}"
+                    }
+                }
+            }
+        }
+
         stage('Update Frontend .env File') {
             steps {
-                sh '''
+                sh """
                     if [ -f frontend/.env ]; then
-                        sed -i 's|BACKEND_URL=.*|BACKEND_URL=http://easycrud1-backend:8080|' frontend/.env
+                        sed -i 's|VITE_API_URL=.*|VITE_API_URL=http://${EC2_PUBLIC_IP}:8080/api|' frontend/.env
                     else
                         echo ".env file not found!"
                         exit 1
                     fi
-                '''
+                """
             }
         }
 
