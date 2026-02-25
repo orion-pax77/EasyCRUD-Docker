@@ -182,30 +182,9 @@ Open browser:
 http://<EC2-PUBLIC-IP>:8081
 ```
 
-Install **Suggested Plugins**.
-Perfect 👍 Below is the clean section updated exactly as you requested.
-
-You can replace the **“Install Suggested Plugins”** line with this improved version in your documentation.
-
 ---
 
-## 🔹 Access Jenkins
-
-Get admin password:
-
-```bash
-sudo cat /var/lib/jenkins/secrets/initialAdminPassword
-```
-
-Open browser:
-
-```
-http://<EC2-PUBLIC-IP>:8081
-```
-
-Install **Suggested Plugins**.
-
----
+# Install **Suggested Plugins**.
 
 ## 🔹 Additionally Install Required Plugins
 
@@ -580,6 +559,7 @@ This project demonstrates:
 * ✅ Production-ready Deployment Architecture
 
 ---
+
 
 
 
