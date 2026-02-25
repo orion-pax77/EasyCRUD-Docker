@@ -100,6 +100,8 @@ EOF
                         sed -i 's|spring.datasource.password=.*|spring.datasource.password=redhat123|' backend/src/main/resources/application.properties
                         sed -i 's|spring.jpa.hibernate.ddl-auto=.*|spring.jpa.hibernate.ddl-auto=update|' backend/src/main/resources/application.properties
                         sed -i 's|spring.jpa.show-sql=.*|spring.jpa.show-sql=true|' backend/src/main/resources/application.properties
+                        sed -i 's|spring.datasource.driver-class-name=org.mariadb.jdbc.Driver|' backend/src/main/resources/application.properties
+
                     else
                         echo "application.properties not found!"
                         exit 1
