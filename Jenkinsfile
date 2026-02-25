@@ -24,16 +24,15 @@ pipeline {
                     accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                     secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                 ]]) {
-                    sh """
+                    sh '''
                         terraform -chdir=terraform init -upgrade
                         terraform -chdir=terraform validate
                         terraform -chdir=terraform apply -auto-approve
-                    """
+                    '''
                 }
             }
         }
 
-        // ✅ Fetch endpoint BEFORE using it
         stage('Fetch RDS Endpoint') {
             steps {
                 script {
@@ -47,49 +46,48 @@ pipeline {
             }
         }
 
-        // ✅ Now DB creation works
-       stage('Create MariaDB Database & Table') {
-    steps {
-        withCredentials([usernamePassword(
-            credentialsId: 'rds-creds',
-            usernameVariable: 'DB_USER',
-            passwordVariable: 'DB_PASS'
-        )]) {
+        stage('Create MariaDB Database & Table') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'rds-creds',
+                    usernameVariable: 'DB_USER',
+                    passwordVariable: 'DB_PASS'
+                )]) {
 
-            sh '''
-            export MYSQL_PWD="$DB_PASS"
+                    sh '''
+                        export MYSQL_PWD="$DB_PASS"
 
-            mysql -h "$RDS_ENDPOINT" \
-                  -P "$DB_PORT" \
-                  -u "$DB_USER" <<EOF
+                        mysql -h "$RDS_ENDPOINT" \
+                              -P "$DB_PORT" \
+                              -u "$DB_USER" <<EOF
 
-            CREATE DATABASE IF NOT EXISTS student_db;
+                        CREATE DATABASE IF NOT EXISTS student_db;
 
-            CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY '$DB_PASS';
+                        CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY '$DB_PASS';
 
-            GRANT ALL PRIVILEGES ON student_db.* TO 'admin'@'%';
+                        GRANT ALL PRIVILEGES ON student_db.* TO 'admin'@'%';
 
-            FLUSH PRIVILEGES;
+                        FLUSH PRIVILEGES;
 
-            USE student_db;
+                        USE student_db;
 
-            CREATE TABLE IF NOT EXISTS students (
-              id BIGINT NOT NULL AUTO_INCREMENT,
-              name VARCHAR(255) DEFAULT NULL,
-              email VARCHAR(255) DEFAULT NULL,
-              course VARCHAR(255) DEFAULT NULL,
-              student_class VARCHAR(255) DEFAULT NULL,
-              percentage DOUBLE DEFAULT NULL,
-              branch VARCHAR(255) DEFAULT NULL,
-              mobile_number VARCHAR(255) DEFAULT NULL,
-              PRIMARY KEY (id)
-            );
+                        CREATE TABLE IF NOT EXISTS students (
+                            id BIGINT NOT NULL AUTO_INCREMENT,
+                            name VARCHAR(255) DEFAULT NULL,
+                            email VARCHAR(255) DEFAULT NULL,
+                            course VARCHAR(255) DEFAULT NULL,
+                            student_class VARCHAR(255) DEFAULT NULL,
+                            percentage DOUBLE DEFAULT NULL,
+                            branch VARCHAR(255) DEFAULT NULL,
+                            mobile_number VARCHAR(255) DEFAULT NULL,
+                            PRIMARY KEY (id)
+                        );
 
 EOF
-            '''
+                    '''
+                }
+            }
         }
-    }
-}
 
         stage('Update application.properties') {
             steps {
@@ -112,47 +110,53 @@ EOF
         stage('Build Backend Image') {
             steps {
                 dir('backend') {
-                    sh "docker build -t orionpax77/easycrud1-jenkins:backend . --no-cache"
+                    sh 'docker build -t orionpax77/easycrud1-jenkins:backend . --no-cache'
                 }
             }
         }
 
         stage('Run Backend Container') {
             steps {
-                sh """
+                sh '''
                     docker rm -f easycrud1-backend || true
-                    docker run -d --name easycrud1-backend -p 8080:8080 orionpax77/easycrud1-jenkins:backend
-                """
+                    docker run -d \
+                        --name easycrud1-backend \
+                        -p 8080:8080 \
+                        orionpax77/easycrud1-jenkins:backend
+                '''
             }
         }
 
-        stage('Update .env File') {
-    steps {
-        sh """
-            if [ -f frontend/.env ]; then
-                sed -i 's|BACKEND_URL=.*|BACKEND_URL=http://easycrud1-backend:8080|' frontend/.env
-            else
-                echo ".env file not found!"
-                exit 1
-            fi
-        """
-    }
-}
+        stage('Update Frontend .env File') {
+            steps {
+                sh '''
+                    if [ -f frontend/.env ]; then
+                        sed -i 's|BACKEND_URL=.*|BACKEND_URL=http://easycrud1-backend:8080|' frontend/.env
+                    else
+                        echo ".env file not found!"
+                        exit 1
+                    fi
+                '''
+            }
+        }
 
         stage('Build Frontend Image') {
             steps {
                 dir('frontend') {
-                    sh "docker build -t orionpax77/easycrud1-jenkins:frontend . --no-cache"
+                    sh 'docker build -t orionpax77/easycrud1-jenkins:frontend . --no-cache'
                 }
             }
         }
 
         stage('Run Frontend Container') {
             steps {
-                sh """
+                sh '''
                     docker rm -f easycrud1-frontend || true
-                    docker run -d --name easycrud1-frontend -p 80:80 orionpax77/easycrud1-jenkins:frontend
-                """
+                    docker run -d \
+                        --name easycrud1-frontend \
+                        -p 80:80 \
+                        orionpax77/easycrud1-jenkins:frontend
+                '''
             }
         }
 
@@ -163,12 +167,12 @@ EOF
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    sh """
+                    sh '''
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                         docker push orionpax77/easycrud1-jenkins:backend
                         docker push orionpax77/easycrud1-jenkins:frontend
                         docker logout
-                    """
+                    '''
                 }
             }
         }
