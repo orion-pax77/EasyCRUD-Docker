@@ -1,85 +1,108 @@
 # 🚀 Jenkins + Terraform + Docker + RDS Deployment Guide
-(Pipeline Script from SCM – Production Setup)
 
-This project deploys a Full Stack Application (Backend + Frontend) using:
+## (Production CI/CD Setup – Pipeline Script from SCM)
 
-✅ AWS RDS (MariaDB)
+This project automates deployment of a **Full Stack Application (Backend + Frontend)** using:
 
-✅ Terraform (Infrastructure as Code)
+* ✅ **AWS RDS (MariaDB)**
+* ✅ **Terraform (Infrastructure as Code)**
+* ✅ **Docker (Containerization)**
+* ✅ **Docker Hub (Image Registry)**
+* ✅ **Jenkins CI/CD (Pipeline Script from SCM)**
 
-✅ Docker (Containerization)
+All infrastructure and application deployment is automated using a **Jenkins pipeline stored in GitHub**.
 
-✅ Docker Hub (Image Registry)
-
-✅ Jenkins CI/CD (Pipeline Script from SCM)
-
-All infrastructure and application deployment is automated using a Jenkins pipeline stored inside the GitHub repository.
+---
 
 # 📌 Prerequisites
-🔹 AWS
 
-AWS Account (Free Tier Supported)
+## 🔹 AWS Requirements
 
-IAM user with:
+* AWS Account (Free Tier Supported)
+* IAM User with permissions for:
 
-EC2
+  * EC2
+  * RDS
+  * VPC
+  * Security Groups
+* Access Key & Secret Key
 
-RDS
+## 🔹 Required Accounts
 
-VPC
+* Docker Hub Account
+* GitHub Repository
 
-Security Group permissions
-
-Access Key & Secret Key
-
-🔹 Accounts
-
-Docker Hub Account
-
-GitHub Repository:
-
+```
 https://github.com/orion-pax77/EasyCRUD-Docker-By-Jenkins.git
+```
 
-# 🟢 STEP 1: Launch EC2 (Ubuntu for Jenkins)
+---
+
+# 🟢 STEP 1: Launch EC2 Instance (Ubuntu for Jenkins)
 
 Go to:
 
+```
 AWS Console → EC2 → Launch Instance
+```
 
-Select:
+### Select:
 
-AMI → Ubuntu Server 22.04 LTS
+* **AMI** → Ubuntu Server 22.04 LTS
+* **Instance Type** → c7i-flex.large
+* **Storage** → 20 GB
 
-Instance Type → c7i-flex.large
+### Security Group Ports:
 
-Storage → 20GB
+| Port | Purpose              |
+| ---- | -------------------- |
+| 22   | SSH                  |
+| 8080 | Jenkins              |
+| 80   | Frontend             |
+| 8080 | Backend              |
+| 3306 | (Only if RDS Public) |
 
-Security Group:
+Launch the instance.
 
-22 (SSH)
+---
 
-8080 (Jenkins)
+## 🔹 Connect to EC2
 
-80 (Frontend)
-
-8080 (Backend)
-
-3306 (Optional – only if RDS public)
-
-Launch instance.
-
-🔹 Connect to EC2
+```bash
 ssh -i your-key.pem ubuntu@your-public-ip
-🟢 STEP 2: Install Required Software
-🔹 Update System
+```
+
+---
+
+# 🟢 STEP 2: Install Required Software
+
+---
+
+## 🔹 Update System
+
+```bash
 sudo apt update -y
-☕ Install Java (Required for Jenkins)
+```
+
+---
+
+## ☕ Install Java (Required for Jenkins)
+
+```bash
 sudo apt install openjdk-17-jdk -y
+```
 
 Verify:
 
+```bash
 java -version
-🛠 Install Jenkins
+```
+
+---
+
+## 🛠 Install Jenkins
+
+```bash
 curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee \
   /usr/share/keyrings/jenkins-keyring.asc > /dev/null
 
@@ -89,30 +112,55 @@ echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
 
 sudo apt update
 sudo apt install jenkins -y
+```
 
 Start Jenkins:
 
+```bash
 sudo systemctl start jenkins
 sudo systemctl enable jenkins
-🔹 Access Jenkins
+```
+
+---
+
+## 🔹 Access Jenkins
+
+Get admin password:
+
+```bash
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+```
 
-Open in browser:
+Open browser:
 
+```
 http://<EC2-PUBLIC-IP>:8080
+```
 
-Install suggested plugins.
+Install **Suggested Plugins**.
 
-🟢 Install Docker
+---
+
+## 🟢 Install Docker
+
+```bash
 sudo apt install docker.io -y
 sudo systemctl start docker
 sudo systemctl enable docker
+```
 
 Allow Jenkins to use Docker:
 
+```bash
 sudo usermod -aG docker jenkins
 sudo systemctl restart jenkins
-🟢 Install Terraform
+```
+
+---
+
+## 🟢 Install Terraform
+
+```bash
 sudo apt install -y gnupg software-properties-common curl
 
 curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o \
@@ -124,209 +172,288 @@ echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
 
 sudo apt update
 sudo apt install terraform -y
+```
 
 Verify:
 
+```bash
 terraform -version
-🟢 Install MySQL Client
+```
+
+---
+
+## 🟢 Install MySQL Client
+
+```bash
 sudo apt install mysql-client -y
-🟢 STEP 3: Add Credentials in Jenkins
+```
+
+---
+
+# 🟢 STEP 3: Add Credentials in Jenkins
 
 Go to:
 
+```
 Manage Jenkins → Credentials → Global → Add Credentials
-✅ 1. AWS Credentials
+```
 
-Kind → AWS Credentials
+---
 
-ID → aws-creds
+## ✅ 1️⃣ AWS Credentials
 
-Add Access Key & Secret Key
+* Kind → AWS Credentials
+* ID → `aws-creds`
+* Add Access Key & Secret Key
 
-✅ 2. RDS Credentials
+---
 
-Kind → Username/Password
+## ✅ 2️⃣ RDS Credentials
 
-ID → rds-creds
+* Kind → Username/Password
+* ID → `rds-creds`
+* Username → `admin`
+* Password → `redhat123`
 
-Username → admin
+---
 
-Password → redhat123
+## ✅ 3️⃣ Docker Hub Credentials
 
-✅ 3. Docker Hub Credentials
+* Kind → Username/Password
+* ID → `dockerhub-cred`
+* Add DockerHub username & password
 
-Kind → Username/Password
+Click **Save**.
 
-ID → dockerhub-cred
+---
 
-Add DockerHub username & password
+# 🟢 STEP 4: Create Jenkins Pipeline (Pipeline Script from SCM)
 
-Click Save.
+---
 
-🟢 STEP 4: Create Pipeline (Pipeline Script from SCM)
-🔹 1️⃣ Create New Job
+## 🔹 1️⃣ Create New Job
 
-Click New Item
+* Click **New Item**
+* Name → `easycrud-deployment`
+* Select → **Pipeline**
+* Click **OK**
 
-Name → easycrud-deployment
+---
 
-Select → Pipeline
+## 🔹 2️⃣ Configure Pipeline
 
-Click OK
-
-🔹 2️⃣ Configure Pipeline
-
-Scroll to Pipeline Section
+Scroll to **Pipeline Section**
 
 Select:
 
+```
 Definition → Pipeline script from SCM
-
 SCM → Git
+```
 
-Repository URL:
-https://github.com/orion-pax77/EasyCRUD-Docker.git
-Branch Specifier:
+### Repository URL:
+
+```
+https://github.com/orion-pax77/EasyCRUD-Docker-By-Jenkins.git
+```
+
+### Branch:
+
+```
 */main
-Script Path:
+```
+
+### Script Path:
+
+```
 Jenkinsfile
+```
 
-Click Save
+Click **Save**.
 
-🟢 STEP 5: Run the Pipeline
+---
+
+# 🟢 STEP 5: Run the Pipeline
 
 Click:
 
+```
 Build Now
-⚙️ What Happens Automatically
-1️⃣ Jenkins Clones GitHub Repository
+```
 
-Pulls code including:
+---
 
-backend/
+# ⚙️ What Happens Automatically
 
-frontend/
+---
 
-terraform/
+## 1️⃣ Jenkins Clones Repository
 
-Jenkinsfile
+Clones:
 
-2️⃣ Terraform Creates AWS Infrastructure
+* `backend/`
+* `frontend/`
+* `terraform/`
+* `Jenkinsfile`
 
-Default VPC
+---
 
-Security Group
+## 2️⃣ Terraform Creates AWS Infrastructure
 
-DB Subnet Group
+* Default VPC
+* Security Group
+* DB Subnet Group
+* MariaDB RDS Instance
 
-MariaDB RDS Instance
+---
 
-3️⃣ Jenkins Fetches RDS Endpoint
+## 3️⃣ Jenkins Fetches RDS Endpoint
 
-Reads:
-
+```bash
 terraform output rds_endpoint
-4️⃣ Jenkins Creates Database & Table
+```
+
+---
+
+## 4️⃣ Jenkins Creates Database & Table
 
 Creates:
 
-student_db
+* `student_db`
+* `admin` user
+* `students` table
 
-admin user
+---
 
-students table
+## 5️⃣ Jenkins Updates Backend Configuration
 
-5️⃣ Jenkins Updates Backend Configuration
+Updates:
 
-Modifies:
-
+```
 backend/src/main/resources/application.properties
+```
 
 Sets:
 
-RDS endpoint
+* RDS endpoint
+* DB port
+* Username
+* Password
+* MariaDB driver
 
-DB port
+---
 
-Username
+## 6️⃣ Jenkins Builds Backend Docker Image
 
-Password
-
-MariaDB driver
-
-6️⃣ Jenkins Builds Backend Docker Image
+```bash
 docker build -t backend-image .
-7️⃣ Jenkins Runs Backend Container
+```
+
+---
+
+## 7️⃣ Jenkins Runs Backend Container
+
+```bash
 docker run -d -p 8080:8080 backend-image
-8️⃣ Jenkins Updates Frontend Environment
+```
+
+---
+
+## 8️⃣ Jenkins Updates Frontend Environment
 
 Sets:
 
+```
 BACKEND_URL=http://easycrud1-backend:8080
-9️⃣ Jenkins Builds Frontend Docker Image
+```
+
+---
+
+## 9️⃣ Jenkins Builds Frontend Docker Image
+
+```bash
 docker build -t frontend-image .
-🔟 Jenkins Runs Frontend Container
+```
+
+---
+
+## 🔟 Jenkins Runs Frontend Container
+
+```bash
 docker run -d -p 80:80 frontend-image
-1️⃣1️⃣ Jenkins Pushes Images to Docker Hub
+```
+
+---
+
+## 1️⃣1️⃣ Jenkins Pushes Images to Docker Hub
 
 Pushes:
 
-Backend image
+* Backend image
+* Frontend image
 
-Frontend image
+---
 
-⏳ Expected Deployment Time
+# ⏳ Expected Deployment Time
 
-Terraform provisioning: 3–5 minutes
+| Task                   | Time         |
+| ---------------------- | ------------ |
+| Terraform Provisioning | 3–5 minutes  |
+| Docker Build           | 2–3 minutes  |
+| Full Pipeline          | 6–10 minutes |
 
-Docker build: 2–3 minutes
+---
 
-Full pipeline: 6–10 minutes
-
-🎯 Final Result
+# 🎯 Final Result
 
 After successful pipeline execution:
 
-✅ AWS RDS Created
+* ✅ AWS RDS Created
+* ✅ Database & Table Created
+* ✅ Backend Running (Port 8080)
+* ✅ Frontend Running (Port 80)
+* ✅ Docker Images Pushed
+* ✅ Fully Automated CI/CD Deployment
 
-✅ Database & Table Created
+---
 
-✅ Backend Running (Port 8080)
+# 🌐 Access Application
 
-✅ Frontend Running (Port 80)
+### Frontend
 
-✅ Docker Images Pushed
-
-✅ Fully Automated CI/CD Deployment
-
-🌐 Access Application
-
-Frontend:
-
+```
 http://<EC2-PUBLIC-IP>
+```
 
-Backend:
+### Backend
 
+```
 http://<EC2-PUBLIC-IP>:8080
-🛑 To Destroy Infrastructure
+```
 
-Go to Jenkins workspace:
+---
 
+# 🛑 Destroy Infrastructure
+
+Navigate to Jenkins workspace:
+
+```bash
 cd /var/lib/jenkins/workspace/easycrud-deployment/terraform
 terraform destroy --auto-approve
+```
 
 Or create a separate destroy pipeline.
 
-🏁 Conclusion
+---
+
+# 🏁 Conclusion
 
 This project demonstrates:
 
-Infrastructure as Code (Terraform)
+* ✅ Infrastructure as Code (Terraform)
+* ✅ Automated Cloud Deployment
+* ✅ CI/CD using Jenkins (Pipeline Script from SCM)
+* ✅ Docker Containerization
+* ✅ Production-ready Deployment Architecture
 
-Automated Cloud Deployment
-
-CI/CD using Jenkins (Pipeline Script from SCM)
-
-Containerized Full Stack Application
-
-Production-ready deployment architecture
+---
