@@ -135,6 +135,37 @@ Open browser:
 http://<EC2-PUBLIC-IP>:8080
 ```
 
+
+# 🔄 Change Jenkins Default Port (8080 → Custom Port)
+
+By default, **Jenkins runs on port `8080`**.
+But port 8080 is will be used for backend app . 
+
+---
+
+## 🟢 Edit Jenkins Configuration File
+
+On your EC2 instance, run:
+
+```bash
+sudo nano /lib/systemd/system/jenkins.service 
+```
+
+Find this line:
+
+```bash
+Environment="JENKINS_PORT=8080"
+```
+
+Change it to your desired port, for example:
+
+```bash
+Environment="JENKINS_PORT=8081"
+```
+
+Save and exit:
+---
+
 # Install **Suggested Plugins**.
 
 ---
@@ -174,17 +205,6 @@ After installation, restart Jenkins if required.
 * Allows Jenkins to securely store AWS Access Key & Secret Key
 * Required for Terraform to authenticate with AWS
 * Enables usage of `withAWS` or AWS credential bindings in pipeline
-
----
-
-## (Optional but Recommended) ✅ Docker Pipeline Plugin
-
-**Plugin Name:** `Docker Pipeline`
-
-🔹 Purpose:
-
-* Enables Docker build and push inside Jenkins pipeline
-* Provides better Docker integration
 
 ---
 
@@ -504,5 +524,6 @@ This project demonstrates:
 * ✅ Production-ready Deployment Architecture
 
 ---
+
 
 
