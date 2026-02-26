@@ -137,10 +137,7 @@ http://<EC2-PUBLIC-IP>:8080
 
 # Install **Suggested Plugins**.
 
-
 ---
-
-# 🔌 Install Required Jenkins Plugins
 
 After unlocking Jenkins and selecting **Install Suggested Plugins**, you must also install the following additional plugins:
 
@@ -507,4 +504,5 @@ This project demonstrates:
 * ✅ Production-ready Deployment Architecture
 
 ---
+
 
