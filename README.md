@@ -203,8 +203,6 @@ Search and install:
 * Helps monitor build progress
 * Makes debugging easier
 
-After installation, restart Jenkins if required.
-
 ---
 
 ## ✅ 2️⃣ AWS Credentials Plugin
@@ -216,6 +214,8 @@ After installation, restart Jenkins if required.
 * Allows Jenkins to securely store AWS Access Key & Secret Key
 * Required for Terraform to authenticate with AWS
 * Enables usage of `withAWS` or AWS credential bindings in pipeline
+
+After installation, restart Jenkins if required.
 
 ---
 
@@ -535,6 +535,7 @@ This project demonstrates:
 * ✅ Production-ready Deployment Architecture
 
 ---
+
 
 
 
