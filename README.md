@@ -136,7 +136,7 @@ http://<EC2-PUBLIC-IP>:8080
 ```
 
 
-# 🔄 Change Jenkins Default Port (8080 → Custom Port)
+# 🔄 Change Jenkins Default Port (8080 → 8081)
 
 By default, **Jenkins runs on port `8080`**.
 But port 8080 is will be used for backend app . 
@@ -164,6 +164,7 @@ Environment="JENKINS_PORT=8081"
 ```
 
 Save and exit:
+
 ---
 
 # Install **Suggested Plugins**.
@@ -524,6 +525,7 @@ This project demonstrates:
 * ✅ Production-ready Deployment Architecture
 
 ---
+
 
 
 
